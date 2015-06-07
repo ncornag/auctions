@@ -1,0 +1,29 @@
+{
+  "PORT": 3000,
+  "IP": "0.0.0.0",
+  "bus": {
+    "impl": "bus-redis",
+    "url": "redis://localhost:6379"
+  },
+  "store": {
+    "impl": "store-redis",
+    "url": "redis://localhost:6379"
+  },
+  "logger": {
+    "level": "info",
+    "express": {
+      "enabled": true,
+      "pattern": ":remote-addr - :remote-user [:date[clf]] \":method :url HTTP/:http-version\" :status :res[content-length] \":referrer\" \":user-agent\" :response-time ms"
+    }
+  },
+  "scheduler": {
+    "startAuctionsRunnerFrequencyInSeconds": 1,
+    "stopAuctionsRunnerFrequencyInSeconds": 1
+  },
+  "stats": {
+    "bids": {
+      "active": true,
+      "frequency": 10000
+    }
+  }
+}

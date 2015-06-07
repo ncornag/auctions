@@ -1,0 +1,9 @@
+{
+  "logger": {
+    "express": {
+      "enabled": false
+    }
+  }
+}
+
+

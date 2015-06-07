@@ -1,0 +1,8 @@
+{
+  "logger": {
+    "level": "info"
+    ,"express": {
+      "enabled": false
+    }
+  }
+}
