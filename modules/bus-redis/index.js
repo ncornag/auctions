@@ -1,11 +1,15 @@
 'use strict';
 
+var url = require('url');
 var Redis = require('ioredis');
 
-module.exports = function(app) {
-  app.logger.info('[bus] redis into [%j]', app.config.get('bus:url'))
-  var sub = new Redis(app.config.get('bus:url'));
-  var pub = new Redis(app.config.get('bus:url'));
+module.exports = function(app, name) {
+  var configUrl = app.config.get('bus:' + name + ':url');
+  var parsedUrl = url.parse(configUrl);
+  app.logger.info('[bus] redis into [%j]', parsedUrl.host);
+
+  var sub = new Redis(configUrl);
+  var pub = new Redis(configUrl);
 
   return {
     send: function (channel, message) {

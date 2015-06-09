@@ -3,8 +3,8 @@ var winston = require('winston')
    ,morgan = require('morgan')
    ,express = require('express')
    ,bodyParser = require('body-parser')
-   ,multer = require('multer');
-
+   ,multer = require('multer')
+   ,path = require('path');
 
 module.exports = function(app) {
 
@@ -22,6 +22,13 @@ module.exports = function(app) {
 
   // Add routes
   var router = require('../router/index')(app);
+
+  // Add static
+  expressApp.use(express.static(path.join(app.config.get('rootPath'), 'public')));
+
+  // View engine setup
+  //expressApp.set('views', path.join(__dirname, 'views'));
+  //expressApp.set('view engine', 'ejs');
 
   // Log errors
   expressApp.use(expressWinston.errorLogger({

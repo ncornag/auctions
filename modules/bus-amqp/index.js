@@ -3,20 +3,15 @@
 var url = require('url');
 var servicebus = require('servicebus');
 
-module.exports = function(app) {
+module.exports = function(appn name) {
+  var configUrl = app.config.get('bus:' + name + ':url')
+  var parsedUrl = url.parse(configUrl);
+  app.logger.info('[bus] connected to [%s]', parsedUrl.host);
 
-  function init(config) {
-    var parsedUrl = url.parse(config.url);
-    var data = {
-      url: 'amqp://' + (parsedUrl.auth ? (parsedUrl.auth + '@') : '') + parsedUrl.host
-      ,vhost: parsedUrl.path.substring(1)
-    }
-    var bus = servicebus.bus(data);
-    app.logger.info('[bus] connected to [%s]', parsedUrl.host)
-    return bus;
-  }
-
-  var bus = init(app.config.get('bus'));
+  var bus = servicebus.bus({
+    url: configUrl
+    ,vhost: parsedUrl.path.substring(1)
+  });
 
   return {
     send: function (channel, data) {

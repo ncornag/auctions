@@ -6,8 +6,16 @@ module.exports = function(app) {
 
   var expressApp = app.expressApp;
 
+  //** Web **//
+
+  expressApp.get('/', function (req, res) {
+    res.redirect('/index.html');
+  });
+
+  //** API **//
+
   expressApp.get('/auction', function (req, res) {
-    app.auctionsService.getRunningAuctions(req.query.first, req.query.page).then(function(auctions){
+    app.auctionsService.getRunningAuctions(req.query.first, req.query.page, req.query.full).then(function(auctions){
       res.send(200, auctions);
     });
   });
@@ -18,7 +26,7 @@ module.exports = function(app) {
         // FIXME: Send correct data
         return res.send({
           id: auction.id,
-          pId: auction.pId,
+          pid: auction.pid,
           sta: auction.sta,
           sto: auction.sto,
           ini: Number(auction.ini),
@@ -32,7 +40,7 @@ module.exports = function(app) {
 
   // accept POST request on the homepage
   expressApp.post('/auction/:id/bid', function (req, res) {
-    app.bus.send('bids', {
+    app.bus.send('srv', 'bids', {
       id: req.body.auctionId,
       bid: req.body.bid,
       owner: req.body.owner

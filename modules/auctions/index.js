@@ -25,6 +25,13 @@ module.exports = function(app) {
   var stopAuctionsRunnerFrequency = app.config.get('scheduler:stopAuctionsRunnerFrequencyInSeconds') * 1000;
   var client = new Redis(app.config.get('store:url'));
 
+  var userChannel = function(userName) {
+    return 'user:' + userName;
+  }
+  var auctionChannel = function(id) {
+    return 'auction:' + id;
+  }
+
   var bidsStats = app.config.get('stats:bids:active');
   var bidsStatsFrequency = app.config.get('stats:bids:frequency');
   var requestedBids = 0;
@@ -103,7 +110,7 @@ module.exports = function(app) {
   module.create = function(data) {
     var auction = {
       id: data.id?data.id:utils.newShortId(),
-      pId: data.productId,
+      pid: data.productId,
       st: module.UNSCHEDULED,
       v: 0
     };
@@ -143,7 +150,7 @@ module.exports = function(app) {
 
   // Do bids from the bids queue
   //app.bus.listen('bids', function bidsMessageHandler(message) {
-  app.bus.listen('bids', function bidsMessageHandler(channel, message) {
+  app.bus.listen('srv', 'bids', function bidsMessageHandler(channel, message) {
     if(channel=='bids') {
       app.auctionsService.bid(message.id, {
         bid: message.bid,
@@ -181,10 +188,12 @@ module.exports = function(app) {
                 logger.debug('[bid] New max bid', auctionId, newBid);
                 if (bidsStats) acceptedBids++;
                 // TODO Send NewMaxBid event
+                app.bus.send('web', auctionChannel(auctionId), {id: auctionId, bid: newBid});
                 return resolve(newBid);
               });
             } else {
               lock.release();
+              //app.bus.send('web', userChannel(bidReq.owner), {id: auctionId, bid: newBid});
               return reject(new Error('Invalid bid'));
             }
           })
@@ -203,8 +212,8 @@ module.exports = function(app) {
     return store.getMaxBid(auctionId);
   }
 
-  module.getRunningAuctions = function(first, page) {
-    return store.getRunningAuctions(first, page);
+  module.getRunningAuctions = function(first, page, full) {
+    return store.getRunningAuctions(first, page, full);
   }
 
   return module;

@@ -4,6 +4,7 @@
 
 var Redis = require('ioredis');
 var Promise = require('bluebird');
+var async = require('async');
 var utils = require('../utils');
 
 module.exports = function(app) {
@@ -88,12 +89,33 @@ module.exports = function(app) {
     });
   };
 
-  store.getRunningAuctions = function(first, page) {
+  store.getRunningAuctions = function(first, page, full) {
     // TODO: Cache (cache the cache?)
     return new Promise(function (resolve, reject) {
       client.zrange(queue.running, first - 1, first + page - 2).then(function(data){
         // TODO: Fill with auctions data
-        resolve(data);
+        if(full==='true') {
+          async.map(data, function(auctionId, callback) {
+            store.getAuction(auctionId).then(function(data){
+              store.getMaxBid(data.id).then(function(maxBid){
+                data.maxBid = maxBid?maxBid.bid:Number(data.ini);
+                data.winner = maxBid?maxBid.ow:"";
+                data.inc = Number(data.inc);
+                data.ini = Number(data.ini);
+                callback(null, data);
+              }).catch(function(err){
+                callback(err);
+              });;
+            }).catch(function(err){
+              callback(err);
+            });
+          }, function(err, result){
+            if (err) return reject(err);
+            resolve(result);
+          });
+        } else {
+          resolve(data);
+        }
       });
     });
   };

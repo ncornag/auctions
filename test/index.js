@@ -12,7 +12,7 @@ module.exports = function(app) {
   ];
 
   // Create long auctions
-  for(var i=0; i<50; i++) {
+  for(var i=0; i<5; i++) {
     var id = 'test-' + i;
     as.create({id: id, productId: products[i - Math.floor(i/10)*10]}).then(function (auction) {
       var start = Math.floor((new Date()).getTime() / 1000) * 1000;

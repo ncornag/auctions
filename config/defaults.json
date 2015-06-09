@@ -2,8 +2,17 @@
   "PORT": 3000,
   "IP": "0.0.0.0",
   "bus": {
-    "impl": "bus-redis",
-    "url": "redis://localhost:6379"
+    "engines": [
+      {"name": "srv", "impl": "bus-redis"},
+      {"name": "web", "impl": "bus-pubnub"}
+    ],
+    "srv": {
+      "url": "redis://localhost:6379"
+    },
+    "pn": {
+      "publish_key": "pub-c-xxx",
+      "subscribe_key": "sub-c-9020543c-0e79-11e5-a3e7-02ee2ddab7fe"
+    }
   },
   "store": {
     "impl": "store-redis",

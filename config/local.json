@@ -1,6 +1,6 @@
 {
   "logger": {
-    "level": "info"
+    "level": "debug"
     ,"express": {
       "enabled": false
     }
