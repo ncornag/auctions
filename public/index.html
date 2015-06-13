@@ -31,7 +31,9 @@
 
                   <div class="text-center">
                     <img ng-src="http://akamaicdn.liquidationchannel.com/LCProdThumb/LCProdThumb/{{auction.img}}" class="img-responsive img-thumbnail" alt="{{auction.pid}}">
-                    <span style="color:#0364B5;font-size:16px;font-weight:bold;">${{auction.maxBid}}({{auction.cnt}} bids)</span>
+                    <span style="color:#CD0432;font-size:16px;font-weight:bold;">{{auction.timer}}</span>
+                    <br/>
+                    <span style="color:#0364B5;font-size:16px;font-weight:bold;">${{auction.maxBid}}({{auction.cnt}} bid{{auction.cnt>1?'s':''}})</span>
                     <br/>
                     <span>{{auction.winner}}</span>
                     <br/>

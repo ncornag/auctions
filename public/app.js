@@ -127,12 +127,36 @@ app.factory('busService', ['BUSIMPL', '$injector', function(BUSIMPL, $injector) 
   return $injector.get(BUSIMPL);
 }]);
 
-app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', 'USER', 'busService', function($scope, $rootScope, $http, $route, USER, busService){
+app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', '$timeout', 'USER', 'busService', function($scope, $rootScope, $http, $route, $timeout, USER, busService){
 
   var userChannel = 'user:' + USER;
 
   $scope.auctions = [];
   $scope.auctionsKeys = [];
+
+  $scope.onTimeout = function(){
+    var now = (new Date()).getTime();
+    $scope.auctions.forEach(function(auction){
+      var msec = auction.sto - now;
+      if (msec>0) {
+        var hh = Math.floor(msec / 1000 / 60 / 60);
+        msec -= hh * 1000 * 60 * 60;
+        var mm = Math.floor(msec / 1000 / 60);
+        msec -= mm * 1000 * 60;
+        var ss = Math.floor(msec / 1000);
+        auction.timer = ('0'+hh).substr(-2,2) + ' : ' + ('0'+mm).substr(-2,2) + ' : ' + ('0'+ss).substr(-2,2);
+      } else {
+        auction.timer = '00 : 00 : 00';
+      }
+
+    })
+    mytimeout = $timeout($scope.onTimeout, 1000);
+  }
+  var mytimeout = $timeout($scope.onTimeout, 1000);
+
+  $scope.stop = function(){
+    $timeout.cancel(mytimeout);
+  }
 
   var subscribeToAuctionChannels = function(auctions){
     $scope.auctions.forEach(function(auction){
