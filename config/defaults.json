@@ -4,7 +4,8 @@
   "bus": {
     "engines": [
       {"name": "srv", "impl": "bus-redis"},
-      {"name": "web", "impl": "bus-pubnub"}
+      {"name": "pn", "impl": "bus-pubnub"},
+      {"name": "io", "impl": "bus-sockets"}
     ],
     "srv": {
       "url": "redis://localhost:6379"

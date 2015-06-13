@@ -1,4 +1,5 @@
 var winston = require('winston')
+   ,http = require('http')
    ,expressWinston = require('express-winston')
    ,morgan = require('morgan')
    ,express = require('express')
@@ -74,7 +75,8 @@ module.exports = function(app) {
   var port = app.config.get('PORT');
   var ip = app.config.get('IP');
 
-  expressApp.listen(port, ip)
+  var server = app.server = http.createServer(expressApp);
+  server.listen(port, ip);
   app.logger.info('[express] initialized on %s:%s', ip, port);
 
   return expressApp;

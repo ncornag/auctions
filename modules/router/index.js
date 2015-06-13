@@ -21,7 +21,7 @@ module.exports = function(app) {
   });
 
   expressApp.get('/auction/:id', function (req, res) {
-    app.auctionsService.getAuction(req.params.id).then(function(auction){
+    app.auctionsService.getAuction(req.params.id, false).then(function(auction){
       app.auctionsService.getMaxBid(req.params.id).then(function(bid){
         // FIXME: Send correct data
         return res.send({

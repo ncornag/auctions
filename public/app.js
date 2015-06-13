@@ -1,52 +1,11 @@
-var app = angular.module('auctions', ['ngRoute', 'pubnub.angular.service']);
+var app = angular.module('auctions', ['ngRoute', 'pubnub.angular.service', 'btford.socket-io']);
 
 
 app.constant('PUBNUBC', {
   subscribe_key: 'sub-c-9020543c-0e79-11e5-a3e7-02ee2ddab7fe'
-}).constant('USER', 'testuser');
-
-app.service('pnService', ['$rootScope', 'PubNub', 'PUBNUBC', function pnFactory($rootScope, PubNub, PUBNUBC) {
-  $rootScope.connected = false;
-  $rootScope.connecting = false;
-  return {
-    subscribe: function(channel) {
-      PubNub.ngSubscribe({
-        channel: channel,
-        message: function (event) {
-          $rootScope.$broadcast(event[2], event[0]);
-        }
-      });
-    },
-    connect: function (user) {
-      var userChannel = 'user:' + user;
-      //console.log('about to connect', user.id)
-      if (!$rootScope.connected && !$rootScope.connecting) {
-        $rootScope.connecting = true;
-        var me = this;
-        PubNub.init({subscribe_key: PUBNUBC.subscribe_key, uuid: user})
-
-        PubNub.ngSubscribe({
-          channel: userChannel,
-          message: function (event) {
-            $rootScope.$broadcast(event[2], event[0]);
-          },
-          connect: function () {
-            $rootScope.connected = true
-            $rootScope.connecting = false
-            $rootScope.$apply();
-          }
-        })
-      }
-    },
-
-    disconnect: function (user) {
-      var userChannel = 'user:' + user;
-      PubNub.ngUnsubscribe({channel: userChannel});
-      PubNub.destroy();
-      $rootScope.connected = false;
-    }
-  }
-}])
+})
+.constant('USER', 'testuser')
+.constant('BUSIMPL', 'ioBusService');
 
 app.config([ '$routeProvider', 'USER', function($routeProvider, USER) {
   $routeProvider
@@ -68,18 +27,135 @@ app.config([ '$routeProvider', 'USER', function($routeProvider, USER) {
 }
 ]);
 
+app.service('pnBusService', ['$rootScope', 'PubNub', 'PUBNUBC', function pnFactory($rootScope, PubNub, PUBNUBC) {
+  $rootScope.connected = false;
 
-app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', 'USER', 'pnService', function($scope, $rootScope, $http, $route, USER, pnService){
+  PubNub.init({
+    windowing: 1000, // MILLISECONDS
+    keepalive: 60,   // SECONDS
+    subscribe_key: PUBNUBC.subscribe_key
+  });
+
+  var connectFn = function() {
+    console.info('[pnBusService] connected');
+    $rootScope.connected = true;
+    $rootScope.$apply();
+  };
+
+  var disconnectFn = function() {
+    console.info('[pnBusService] disconnected');
+    $rootScope.connected = false;
+    $rootScope.$apply();
+  };
+
+  PubNub.ngSubscribe({
+    channel: 'lobby',
+    connect: connectFn,
+    reconnect: connectFn,
+    disconnect: disconnectFn
+  });
+
+  this.subscribe = function(channel) {
+    console.debug('[bus] Suscribing to channel', channel);
+    PubNub.ngSubscribe({
+      channel: channel,
+      message: function (event) {
+        console.debug('[bus] Message received on', channel);
+        $rootScope.$broadcast(event[2], event[0]);
+      }
+    });
+  };
+
+  this.send = function (eventName, data) {
+    console.debug('[bus] sending message to', channel);
+    PubNub.ngPublish({
+      channel: channel,
+      message: data
+    })
+  };
+
+}])
+
+app.service('ioBusService', ['$rootScope', 'socketFactory', function pnFactory($rootScope, socketFactory) {
+  var socket = socketFactory();
+  var listeners = {};
+
+  $rootScope.connected = false;
+  socket.on('connect', function(){
+    console.info('[ioBusService] connected');
+    socket.on('disconnect', function(){
+      console.info('[ioBusService] disconnected');
+      $rootScope.connected = false;
+    });
+    $rootScope.connected = true;
+  });
+
+  this.subscribe = function (channel) {
+    this.unsubscribe(channel);
+    console.debug('[bus] Suscribing to channel', channel);
+    var subscribeFunction = function (message) {
+      console.debug('[bus] Message received on', channel);
+      $rootScope.$broadcast(channel, message);
+    }
+    socket.on(channel, subscribeFunction);
+    listeners[channel] = subscribeFunction;
+  };
+
+  this.unsubscribe = function (channel) {
+    if (listeners[channel]) {
+      console.debug('[bus] Unsuscribing to channel', channel);
+      socket.removeListener(channel, listeners[channel]);
+      delete listeners[channel];
+    }
+  };
+
+  this.send = function (eventName, data, callback) {
+    console.debug('[bus] sending message to', channel);
+    socket.emit(eventName, data, function () {
+      var args = arguments;
+      $rootScope.$apply(function () {
+        if (callback) {
+          callback.apply(socket, args);
+        }
+      });
+    })
+  };
+
+}])
+
+app.factory('busService', ['BUSIMPL', '$injector', function(BUSIMPL, $injector) {
+  return $injector.get(BUSIMPL);
+}]);
+
+app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', 'USER', 'busService', function($scope, $rootScope, $http, $route, USER, busService){
 
   var userChannel = 'user:' + USER;
 
-  pnService.connect(USER);
+  $scope.auctions = [];
   $scope.auctionsKeys = [];
+
+  var subscribeToAuctionChannels = function(auctions){
+    $scope.auctions.forEach(function(auction){
+      var channelName = 'auction:' + auction.id;
+      busService.subscribe(channelName);
+      $rootScope.$on(channelName, function (event, message) {
+        updateAuction(message);
+      });
+    })
+  }
+  var subscribeToUserChannel = function(auctions){
+    busService.subscribe(userChannel);
+    $rootScope.$on(userChannel, function (event, message) {
+      //
+    });
+  }
+
   var updateAuction = function(message){
     if($scope.auctionsKeys[message.id]!=undefined) {
       var auction = $scope.auctions[$scope.auctionsKeys[message.id]];
       auction.maxBid = message.bid.bid;
       auction.winner = message.bid.ow;
+      auction.cnt = message.count;
       auction.newBid = auction.maxBid + auction.inc;
       $scope.$apply();
     }
@@ -95,19 +171,27 @@ app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', 'USER', '
   };
 
   $scope.doRefresh = function(){
-    $http.get('/auction?first=1&page=5&full=true').then(function auctionServiceResponse(response) {
+    $http.get('/auction?first=1&page=12&full=true').then(function auctionServiceResponse(response) {
       response.data.forEach(function(auction, index){
         auction.newBid = auction.maxBid + auction.inc;
         $scope.auctionsKeys[auction.id] = index;
-        var channelName = 'auction:' + auction.id;
-        pnService.subscribe(channelName);
-        $rootScope.$on(channelName, function (event, message) {
-          updateAuction(message);
-        });
       })
       $scope.auctions = response.data;
     });
   };
+
+  $scope.$watch('auctions', function(newValue, oldValue){
+    if ($scope.connected===true) {
+      subscribeToAuctionChannels($scope.auctions);
+    }
+  });
+
+  $rootScope.$watch('connected', function(newValue, oldValue){
+    if(newValue===true) {
+      subscribeToUserChannel();
+      subscribeToAuctionChannels($scope.auctions);
+    }
+  })
 
   $scope.doRefresh();
 

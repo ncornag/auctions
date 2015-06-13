@@ -18,7 +18,7 @@ module.exports = function(app, name) {
     },
     listen: function(channel, handler) {
       sub.subscribe(channel, function(err, count){
-        app.logger.info('[bus] subscribed to [%s]', channel);
+        app.logger.debug('[bus-redis] subscribed to [%s]', channel);
         sub.on('message', function(channel, message){
           //app.logger.debug('[bus] receiving message [%s] to [%s]', message, channel);
           handler.call(this, channel, JSON.parse(message));

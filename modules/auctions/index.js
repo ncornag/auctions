@@ -40,7 +40,7 @@ module.exports = function(app) {
   if (bidsStats) {
     logger.info('[stats] bids frequency %d', bidsStatsFrequency);
     setInterval(function (argument) {
-      logger.info('[stats] bids req:%d/s done:%d/s', 1000*acceptedBids/bidsStatsFrequency, 1000*requestedBids/bidsStatsFrequency);
+      logger.info('[stats] bids req:%d/s done:%d/s', 1000*requestedBids/bidsStatsFrequency, 1000*acceptedBids/bidsStatsFrequency);
       requestedBids = 0;
       acceptedBids = 0;
     }, bidsStatsFrequency);
@@ -51,7 +51,7 @@ module.exports = function(app) {
   var startAuctions = function(time) {
     store.getAuctionsAboutToStart(time).then(function(auctionKeys){
       auctionKeys.forEach(function(key){
-        store.getAuction(key).then(function(auction){
+        store.getAuction(key, false).then(function(auction){
           auction.st = module.RUNNING;
           store.storeAuction(auction).then(function(data){
             store.addAuctionToRunning(auction).then(function(data){
@@ -81,7 +81,7 @@ module.exports = function(app) {
   var stopAuctions = function(time) {
     store.getAuctionsAboutToStop(time).then(function(auctionKeys){
       auctionKeys.forEach(function(key){
-        store.getAuction(key).then(function(auction){
+        store.getAuction(key, false).then(function(auction){
           auction.st = module.FINISHED;
           store.storeAuction(auction).then(function(data){
             store.removeAuctionFromRunning(auction).then(function(data){
@@ -111,6 +111,7 @@ module.exports = function(app) {
     var auction = {
       id: data.id?data.id:utils.newShortId(),
       pid: data.productId,
+      img: data.productImg,
       st: module.UNSCHEDULED,
       v: 0
     };
@@ -128,7 +129,7 @@ module.exports = function(app) {
   module.schedule = function(auctionId, data, cb) {
 
     // TODO: Validate parameters
-    store.getAuction(auctionId).then(function(auction) {
+    store.getAuction(auctionId, false).then(function(auction) {
 
       auction.sta = data.startTime.getTime();
       auction.sto = data.stopTime.getTime();
@@ -165,7 +166,7 @@ module.exports = function(app) {
   module.bid = function(auctionId, bidReq) {
     if (bidsStats) requestedBids++;
     return new Promise(function(resolve, reject) {
-      store.getAuction(auctionId).then(function(auction){
+      store.getAuction(auctionId, false).then(function(auction){
         if (auction.st != module.RUNNING) {
           return reject(new Error('Auction not running'));
         };
@@ -177,23 +178,25 @@ module.exports = function(app) {
         lock.acquire(lockKey).then(function() {
           store.getMaxBid(auctionId).then(function(bid){
             // TODO: validate increment
-            if(!bid || (bid && bidReq.bid > Number(bid.bid) && bid.ow != bidReq.owner)) {
+            if(!bid || (bid && bidReq.bid > Number(bid.bid))) {
               var newBid = {
                 ts: (new Date()).getTime(),
                 bid: bidReq.bid,
                 ow: bidReq.owner
               };
               store.storeBid(auctionId, newBid).then(function(){
-                lock.release();
-                logger.debug('[bid] New max bid', auctionId, newBid);
-                if (bidsStats) acceptedBids++;
-                // TODO Send NewMaxBid event
-                app.bus.send('web', auctionChannel(auctionId), {id: auctionId, bid: newBid});
-                return resolve(newBid);
+                store.getBidsCount(auctionId).then(function(count){
+                  lock.release();
+                  logger.debug('[bid] New max bid', auctionId, newBid);
+                  if (bidsStats) acceptedBids++;
+                  // TODO Send NewMaxBid event
+                  app.bus.send('io', auctionChannel(auctionId), {id: auctionId, count: count, bid: newBid});
+                  return resolve(newBid);
+                })
               });
             } else {
               lock.release();
-              //app.bus.send('web', userChannel(bidReq.owner), {id: auctionId, bid: newBid});
+              //app.bus.send('pn', userChannel(bidReq.owner), {id: auctionId, bid: newBid});
               return reject(new Error('Invalid bid'));
             }
           })
@@ -204,8 +207,8 @@ module.exports = function(app) {
     })
   }
 
-  module.getAuction = function(auctionId){
-    return store.getAuction(auctionId);
+  module.getAuction = function(auctionId, full){
+    return store.getAuction(auctionId, full);
   };
 
   module.getMaxBid = function(auctionId) {

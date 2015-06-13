@@ -14,14 +14,14 @@ require('./modules/config')(app, [
 // Logger service
 require('./modules/logger')(app);
 
-// Bus
-require('./modules/bus')(app);
-
 // Store
 require('./modules/store')(app);
 
 // Express App
 require('./modules/expressapp')(app);
+
+// Bus
+require('./modules/bus')(app);
 
 // Auction module
 require('./modules/auctions')(app);

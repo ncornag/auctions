@@ -37,8 +37,31 @@ module.exports = function(app) {
     return JSON.parse(client.get(key));
   };
 
-  store.getAuction = function(auctionId){
-    return client.hgetall(auctionKey(auctionId));
+  store.getAuction = function(auctionId, full){
+    return new Promise(function (resolve, reject) {
+      client.hgetall(auctionKey(auctionId)).then(function(auction){
+        auction.inc = Number(auction.inc);
+        auction.ini = Number(auction.ini);
+        if(full) {
+          store.getMaxBid(auction.id).then(function(maxBid){
+            auction.maxBid = maxBid?maxBid.bid:Number(auction.ini);
+            auction.winner = maxBid?maxBid.ow:"";
+            store.getBidsCount(auctionId).then(function(count){
+              auction.cnt = count;
+              resolve(auction);
+            }).catch(function(err){
+              reject(err);
+            });
+          }).catch(function(err){
+            reject(err);
+          });
+        } else {
+          resolve(auction);
+        }
+      }).catch(function(err){
+        reject(err);
+      });
+    });
   };
 
   store.storeAuction = function(auction){
@@ -71,41 +94,16 @@ module.exports = function(app) {
     return client.zrangebyscore(queue.running, 0, time);
   }
 
-  store.scan = function(key, cb){
-    // FIXME: Use promises
-    client.scan(0, 'match', key, function(err, data){
-      if (err) return cb(err);
-      // FIXME: iterate acording to data[0], not just the first page
-      var dataLen = data[1].length;
-      var result = [];
-      if (dataLen==0) return cb(null, result);
-      data[1].forEach(function(key, index, array){
-        store.getAuction(key, function(err, e){
-          if (err) return cb(err);
-          result.push({key:key, data:e});
-          if(index==dataLen-1) return cb(null, result);
-        })
-      })
-    });
-  };
-
   store.getRunningAuctions = function(first, page, full) {
     // TODO: Cache (cache the cache?)
     return new Promise(function (resolve, reject) {
       client.zrange(queue.running, first - 1, first + page - 2).then(function(data){
         // TODO: Fill with auctions data
         if(full==='true') {
+          // FIXME promises/then used like callbacks...
           async.map(data, function(auctionId, callback) {
-            store.getAuction(auctionId).then(function(data){
-              store.getMaxBid(data.id).then(function(maxBid){
-                data.maxBid = maxBid?maxBid.bid:Number(data.ini);
-                data.winner = maxBid?maxBid.ow:"";
-                data.inc = Number(data.inc);
-                data.ini = Number(data.ini);
-                callback(null, data);
-              }).catch(function(err){
-                callback(err);
-              });;
+            store.getAuction(auctionId, full).then(function(data){
+              callback(null, data);
             }).catch(function(err){
               callback(err);
             });
@@ -130,6 +128,10 @@ module.exports = function(app) {
         }
       });
     });
+  };
+
+  store.getBidsCount = function(auctionId){
+    return client.zcount(auctionBidsKey(auctionId), "-inf", "+inf");
   };
 
   store.storeBid = function(auctionId, bid){
