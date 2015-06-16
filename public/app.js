@@ -134,11 +134,11 @@ app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', '$timeout
   $scope.auctions = [];
   $scope.auctionsKeys = [];
 
-  $scope.onTimeout = function(){
+  var calcClocks = function(auctions){
     var now = (new Date()).getTime();
-    $scope.auctions.forEach(function(auction){
+    auctions.forEach(function(auction){
       var msec = auction.sto - now;
-      if (msec>0) {
+      if (msec>999) {
         var hh = Math.floor(msec / 1000 / 60 / 60);
         msec -= hh * 1000 * 60 * 60;
         var mm = Math.floor(msec / 1000 / 60);
@@ -147,12 +147,16 @@ app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', '$timeout
         auction.timer = ('0'+hh).substr(-2,2) + ' : ' + ('0'+mm).substr(-2,2) + ' : ' + ('0'+ss).substr(-2,2);
       } else {
         auction.timer = '00 : 00 : 00';
+        auction.running = false;
       }
-
     })
+  }
+
+  $scope.onTimeout = function(){
+    calcClocks($scope.auctions);
     mytimeout = $timeout($scope.onTimeout, 1000);
   }
-  var mytimeout = $timeout($scope.onTimeout, 1000);
+  var mytimeout = $timeout($scope.onTimeout, 0);
 
   $scope.stop = function(){
     $timeout.cancel(mytimeout);
@@ -198,9 +202,11 @@ app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', '$timeout
     $http.get('/auction?first=1&page=12&full=true').then(function auctionServiceResponse(response) {
       response.data.forEach(function(auction, index){
         auction.newBid = auction.maxBid + auction.inc;
+        auction.running = true;
         $scope.auctionsKeys[auction.id] = index;
       })
       $scope.auctions = response.data;
+      calcClocks($scope.auctions);
     });
   };
 

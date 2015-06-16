@@ -6,6 +6,50 @@
 npm install
 ```
 
+## PubNub config
+
+Add the PubNub publish key in defaults.json (bus:pn)
+Change the server default bus implementation in defaults.json to
+
+```
+{
+  "bus": {
+    ...
+    "default": "pn"
+    ...
+  }
+}
+
+```
+
+Change the client default bus implementation in app.js to
+
+```
+constant('BUSIMPL', 'pnBusService')
+```
+
+## Redis
+
+Configure the redis url in defaults.js:
+
+```
+{
+  "bus" : {
+    ...
+    "srv": {
+      "url": "redis://..."
+    }
+    ...
+  },
+  ...
+  "store": {
+    ...
+    "url": "redis://..."
+    ...
+  }
+}
+```
+
 ## run
 
 ```

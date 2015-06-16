@@ -24,6 +24,7 @@ module.exports = function(app) {
   var startAuctionsRunnerFrequency = app.config.get('scheduler:startAuctionsRunnerFrequencyInSeconds') * 1000;
   var stopAuctionsRunnerFrequency = app.config.get('scheduler:stopAuctionsRunnerFrequencyInSeconds') * 1000;
   var client = new Redis(app.config.get('store:url'));
+  var busImpl = app.config.get('bus:default');
 
   var userChannel = function(userName) {
     return 'user:' + userName;
@@ -190,7 +191,7 @@ module.exports = function(app) {
                   logger.debug('[bid] New max bid', auctionId, newBid);
                   if (bidsStats) acceptedBids++;
                   // TODO Send NewMaxBid event
-                  app.bus.send('io', auctionChannel(auctionId), {id: auctionId, count: count, bid: newBid});
+                  app.bus.send(busImpl, auctionChannel(auctionId), {id: auctionId, count: count, bid: newBid});
                   return resolve(newBid);
                 })
               });

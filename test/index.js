@@ -32,22 +32,26 @@ module.exports = function(app) {
 
   // Create long auctions
   for(var i=0; i<12; i++) {
-    var id = 'test-' + i;
-    as.create({
-      id: id,
-      productId: products[i - Math.floor(i/20)*20].pid,
-      productImg: products[i - Math.floor(i/20)*20].img
-    }).then(function (auction) {
-      var start = Math.floor((new Date()).getTime() / 1000) * 1000;
-      var data = {
-        id: auction.id,
-        startTime: new Date(start),
-        stopTime: new Date(start + 60 * 60 * 1000),
-        startingPrice: 1,
-        increment: 1
-      }
-      as.schedule(auction.id, data, function (err, auction) {});
-    });
+    var doIt = function(i) {
+      var id = 'test-' + i;
+      as.create({
+        id: id,
+        productId: products[i - Math.floor(i/20)*20].pid,
+        productImg: products[i - Math.floor(i/20)*20].img
+      }).then(function (auction) {
+        var start = Math.floor((new Date()).getTime() / 1000) * 1000;
+        var stop = start + 0.2 * 60 * 1000  + (i*10*1000);
+        var data = {
+          id: auction.id,
+          startTime: new Date(start),
+          stopTime: new Date(stop),
+          startingPrice: 1,
+          increment: 1
+        }
+        as.schedule(auction.id, data, function (err, auction) {});
+      });
+    }
+    doIt(i);
   }
 
   //// create test auctions
