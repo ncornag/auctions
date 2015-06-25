@@ -28,6 +28,8 @@ app.config([ '$routeProvider', 'USER', function($routeProvider, USER) {
 ]);
 
 app.service('pnBusService', ['$rootScope', 'PubNub', 'PUBNUBC', function pnFactory($rootScope, PubNub, PUBNUBC) {
+
+  this.name = 'PubNub';
   $rootScope.connected = false;
 
   PubNub.init({
@@ -77,6 +79,7 @@ app.service('pnBusService', ['$rootScope', 'PubNub', 'PUBNUBC', function pnFacto
 }])
 
 app.service('ioBusService', ['$rootScope', 'socketFactory', function pnFactory($rootScope, socketFactory) {
+  this.name = 'ioSocket';
   var socket = socketFactory();
   var listeners = {};
 
@@ -133,6 +136,7 @@ app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', '$timeout
 
   $scope.auctions = [];
   $scope.auctionsKeys = [];
+  $scope.busImpl = busService.name;
 
   var calcClocks = function(auctions){
     var now = (new Date()).getTime();
@@ -199,7 +203,7 @@ app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', '$timeout
   };
 
   $scope.doRefresh = function(){
-    $http.get('/auction?first=1&page=12&full=true').then(function auctionServiceResponse(response) {
+    $http.get('/auction?first=1&page=48&full=true').then(function auctionServiceResponse(response) {
       response.data.forEach(function(auction, index){
         auction.newBid = auction.maxBid + auction.inc;
         auction.running = true;

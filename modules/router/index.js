@@ -15,7 +15,9 @@ module.exports = function(app) {
   //** API **//
 
   expressApp.get('/auction', function (req, res) {
-    app.auctionsService.getRunningAuctions(req.query.first, req.query.page, req.query.full).then(function(auctions){
+    var first = Number(req.query.first);
+    var page = Number(req.query.page);
+    app.auctionsService.getRunningAuctions(first, page, req.query.full).then(function(auctions){
       res.send(200, auctions);
     });
   });
