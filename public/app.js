@@ -178,17 +178,24 @@ app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', '$timeout
   var subscribeToUserChannel = function(auctions){
     busService.subscribe(userChannel);
     $rootScope.$on(userChannel, function (event, message) {
-      //
+      updateAuction(message);
     });
   }
 
   var updateAuction = function(message){
     if($scope.auctionsKeys[message.id]!=undefined) {
       var auction = $scope.auctions[$scope.auctionsKeys[message.id]];
-      auction.maxBid = message.bid.bid;
-      auction.winner = message.bid.ow;
-      auction.cnt = message.count;
-      auction.newBid = auction.maxBid + auction.inc;
+      if (message.error) {
+        auction.error = message.error;
+        setTimeout(function(){
+          auction.error = '';
+        }, 1000)
+      } else {
+        auction.maxBid = message.bid.bid;
+        auction.winner = message.bid.ow;
+        auction.cnt = message.count;
+        auction.newBid = auction.maxBid + auction.inc;
+      }
       $scope.$apply();
     }
   }

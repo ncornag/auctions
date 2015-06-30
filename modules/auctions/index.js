@@ -215,12 +215,12 @@ module.exports = function(app) {
               lock.release(function(err) {
                 // 'Lock on app:lock has expired'
               });
-              //app.bus.send(busImpl, userChannel(bidReq.owner), {id: auctionId, bid: newBid, error:'Invalid bid'});
+              app.bus.send(busImpl, userChannel(bidReq.owner), {id: auctionId, error:'Invalid bid'});
               return reject(new Error('Invalid bid'));
             }
           })
         }).catch(redislock.LockAcquisitionError, function(err) {
-          //app.bus.send(busImpl, userChannel(bidReq.owner), {id: auctionId, bid: newBid, error:'Try again'});
+          app.bus.send(busImpl, userChannel(bidReq.owner), {id: auctionId, error:'Try again'});
           reject(new Error({msg: 'Try again'}));
         });
       });

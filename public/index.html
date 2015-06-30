@@ -35,14 +35,14 @@
                     <br/>
                     <span style="color:#0364B5;font-size:16px;font-weight:bold;">${{auction.maxBid}}({{auction.cnt}} bid{{auction.cnt==1?'':'s'}})</span>
                     <br/>
-                    <span>{{auction.winner}}</span>
+                    <span>{{auction.winner}}</span> <span>{{auction.error}}</span>
                     <img src="sold.png" class="{{(auction.running!=true&&auction.cnt>0)?'1':'hidden'}}" style="position:absolute;z-index:10;width:75px;right:3;bottom:10"></img>
                     <br/>
                     <form>
                       <input type="hidden" ng-model="auction.id"></input>
                       <div class="input-group">
                         <span class="input-group-addon">$</span>
-                        <input type="text" class="form-control" ng-model="auction.newBid">
+                        <input type="text" class="form-control" ng-model="auction.newBid" ng-style="{background: auction.error?'red':''}">
                       </div>
                       <button type="submit" ng-click="doBid(auction.id, auction.newBid)" class="btn btn-primary btn-block {{(auction.running&&connected==true)?'':'disabled'}}">BID NOW</button>
                     </form>
