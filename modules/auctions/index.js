@@ -162,7 +162,8 @@ module.exports = function(app) {
     if(channel=='bids') {
       app.auctionsService.bid(message.id, {
         bid: message.bid,
-        owner: message.owner
+        owner: message.owner,
+        auto: message.auto
       }).catch(function (err) {
         //app.logger.error('%s', err.toString())
       });
@@ -174,51 +175,64 @@ module.exports = function(app) {
     if (bidsStats) requestedBids++;
     var lock = redislock.createLock(client, lockOptions);
     return new Promise(function(resolve, reject) {
-      store.getAuction(auctionId, false).then(function(auction){
-        if (auction.st != module.RUNNING) {
+      store.getAuction(auctionId, true).then(function(auction){
+        if (auction.st != module.RUNNING) { // Validate bid status
           return reject(new Error('Auction not running'));
         };
-        if (bidReq.bid < Number(auction.ini) + Number(auction.inc)) {
+        if (bidReq.bid < Number(auction.ini) + Number(auction.inc)) { // Validate bid min ammount
           return reject(new Error('Invalid bid'));
         }
         var lockKey = utils.format('auction:%s:lock', auctionId);
         lock.acquire(lockKey).then(function() {
-          var t1 = (new Date()).getTime()
-          //console.log('aquired', lockKey, lock._id);
-          store.getMaxBid(auctionId).then(function(bid){
-            // TODO: validate increment
-            if(!bid || (bid && bidReq.bid > Number(bid.bid))) {
-              var newBid = {
-                ts: (new Date()).getTime(),
-                bid: bidReq.bid,
-                ow: bidReq.owner
-              };
-              store.storeBid(auctionId, newBid).then(function(){
-                store.getBidsCount(auctionId).then(function(count){
-                  //console.log('releasing', lockKey, lock._id);
-                  lock.release(function(err) {
-                    if (err) {
-                      //console.log((new Date()).getTime() - t1)
-                      // 'Lock on app:lock has expired'
-                      // FIXME: Was the bid placed?
-                      //return console.log(err.message);
-                    }
-                  });
-                  logger.debug('[bid] New max bid', auctionId, newBid);
-                  if (bidsStats) acceptedBids++;
-                  // TODO Send NewMaxBid event
-                  app.bus.send(busImpl, auctionChannel(auctionId), {id: auctionId, count: count, bid: newBid});
-                  return resolve(newBid);
-                })
+          var maxBid = auction.bids?auction.bids[auction.bids.length-1]:undefined;
+          // TODO: validate bid increment
+          if(maxBid && bidReq.bid <= Number(maxBid.bid)) { // Validate bid ammount
+            lock.release(function(err) {
+              // 'Lock on app:lock has expired'
+            });
+            app.bus.send(busImpl, userChannel(bidReq.owner), {id: auctionId, error:'Invalid bid'});
+            return reject(new Error('Invalid bid'));
+          }
+
+          var newBid = {
+            ts: (new Date()).getTime(),
+            bid: Number(bidReq.bid),
+            ow: bidReq.owner,
+          };
+
+          if (bidReq.auto) {
+            newBid.auto = true;
+            newBid.autoBid = Number(bidReq.bid);
+            newBid.bid = (maxBid?maxBid.bid:auction.ini) + auction.inc;
+          }
+
+          store.storeBid(auctionId, newBid).then(function(){
+            //console.log('releasing', lockKey, lock._id);
+            lock.release(function(err) {
+              if (err) {
+                // FIXME: Was the bid placed?
+                //return console.log(err.message);
+              }
+            });
+            logger.debug('[bid] New max bid', auctionId, newBid);
+            if (bidsStats) acceptedBids++;
+            if(maxBid && maxBid.auto && maxBid.autoBid>newBid.bid) {
+              module.bid(auctionId, {
+                auctionId: auctionId,
+                bid: maxBid.autoBid,
+                owner: maxBid.ow,
+                auto: true
               });
-            } else {
-              lock.release(function(err) {
-                // 'Lock on app:lock has expired'
-              });
-              app.bus.send(busImpl, userChannel(bidReq.owner), {id: auctionId, error:'Invalid bid'});
-              return reject(new Error('Invalid bid'));
             }
-          })
+            auction.bids.push(newBid);
+            auction.bids.forEach(function(bid){
+              delete bid.auto;
+              delete bid.autoBid;
+            })
+            app.bus.send(busImpl, auctionChannel(auctionId), auction);
+            return resolve(newBid);
+          });
+
         }).catch(redislock.LockAcquisitionError, function(err) {
           app.bus.send(busImpl, userChannel(bidReq.owner), {id: auctionId, error:'Try again'});
           reject(new Error({msg: 'Try again'}));

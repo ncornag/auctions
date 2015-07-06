@@ -39,28 +39,25 @@ module.exports = function(app) {
 
   store.getAuction = function(auctionId, full){
     return new Promise(function (resolve, reject) {
-      client.hgetall(auctionKey(auctionId)).then(function(auction){
-        auction.inc = Number(auction.inc);
-        auction.ini = Number(auction.ini);
-        if(full) {
-          store.getMaxBid(auction.id).then(function(maxBid){
-            auction.maxBid = maxBid?maxBid.bid:Number(auction.ini);
-            auction.winner = maxBid?maxBid.ow:"";
-            store.getBidsCount(auctionId).then(function(count){
-              auction.cnt = count;
-              resolve(auction);
-            }).catch(function(err){
-              reject(err);
-            });
-          }).catch(function(err){
-            reject(err);
-          });
-        } else {
-          resolve(auction);
-        }
-      }).catch(function(err){
-        reject(err);
-      });
+      var result = {};
+      client
+         .hgetall(auctionKey(auctionId))
+         .then(function(auction){
+           result = auction;
+           if(result.inc) result.inc = Number(auction.inc);
+           if(result.ini) result.ini = Number(auction.ini);
+           if(full) {
+             return store.getBids(auction.id);
+           } else {
+             resolve(result);
+           }
+         })
+         .then(function(bids){
+           result.bids = bids;
+           resolve(result);
+         }).catch(function(err){
+           reject(err);
+         });
     });
   };
 
@@ -98,9 +95,7 @@ module.exports = function(app) {
     // TODO: Cache (cache the cache?)
     return new Promise(function (resolve, reject) {
       client.zrange(queue.running, first - 1, first + page - 2).then(function(data){
-        // TODO: Fill with auctions data
-        if(full==='true') {
-          // FIXME promises/then used like callbacks...
+        if(full) {
           async.map(data, function(auctionId, callback) {
             store.getAuction(auctionId, full).then(function(data){
               callback(null, data);
@@ -132,6 +127,18 @@ module.exports = function(app) {
 
   store.getBidsCount = function(auctionId){
     return client.zcount(auctionBidsKey(auctionId), "-inf", "+inf");
+  };
+
+  store.getBids = function(auctionId){
+    return new Promise(function (resolve, reject) {
+      client.zrange(auctionBidsKey(auctionId), 0, -1).then(function(data){
+        var bids = [];
+        data.forEach(function(bid){
+          bids.push(JSON.parse(bid));
+        });
+        resolve(bids);
+      });
+    });
   };
 
   store.storeBid = function(auctionId, bid){
