@@ -220,7 +220,7 @@ app.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$route', '$timeout
   };
 
   $scope.doRefresh = function(){
-    $http.get('/auction?first=1&page=500&full=true').then(function auctionServiceResponse(response) {
+    $http.get('/auction?first=1&page=120&full=true').then(function auctionServiceResponse(response) {
       response.data.forEach(function(auction, index){
         auction.maxBid = auction.bids.length>0?auction.bids[auction.bids.length-1].bid:Number(auction.ini);
         auction.winner = auction.bids.length>0?auction.bids[auction.bids.length-1].ow:'';

@@ -3,7 +3,6 @@
 var bus = require('../bus');
 
 module.exports = function(app) {
-
   var expressApp = app.expressApp;
 
   //** Web **//
@@ -20,6 +19,24 @@ module.exports = function(app) {
     var full = req.query.full==='true';
     app.auctionsService.getRunningAuctions(first, page, full).then(function(auctions){
       res.send(200, auctions);
+    });
+  });
+
+  expressApp.get('/auction/:id', function (req, res) {
+    app.auctionsService.getAuction(req.params.id, false).then(function(auction){
+      app.auctionsService.getMaxBid(req.params.id).then(function(bid){
+        // FIXME: Send correct data
+        return res.send({
+          id: auction.id,
+          pid: auction.pid,
+          sta: auction.sta,
+          sto: auction.sto,
+          ini: Number(auction.ini),
+          inc: Number(auction.inc),
+          maxBid: Number((bid&&bid.bid)?bid.bid:auction.ini),
+          winner: (bid&&bid.ow)?bid.ow:''
+        });
+      });
     });
   });
 

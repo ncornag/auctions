@@ -4,12 +4,16 @@
   "bus": {
     "engines": [
       {"name": "srv", "impl": "bus-redis"},
+      {"name": "rmq", "impl": "bus-amqp"},
       {"name": "pn", "impl": "bus-pubnub"},
       {"name": "io", "impl": "bus-sockets"}
     ],
     "default": "io",
     "srv": {
       "url": "redis://localhost:6379"
+    },
+    "rmq": {
+      "url": "amqp://localhost"
     },
     "pn": {
       "publish_key": "pub-c-xxx",
@@ -36,5 +40,8 @@
       "active": true,
       "frequency": 10000
     }
+  },
+  "bids": {
+    "enqueue": false
   }
 }

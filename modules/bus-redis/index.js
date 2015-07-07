@@ -29,10 +29,10 @@ module.exports = function(app, name) {
     queue: function(channel, message) {
       return Queue(channel, parsedUrl.port, parsedUrl.hostname);
     },
-    add: function(queue, message) {
+    publish: function(queue, message) {
       return queue.add(message);
     },
-    process: function(queue, handler) {
+    subscribe: function(queue, handler) {
       return queue.process(handler)
     }
   };

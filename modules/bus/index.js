@@ -11,19 +11,19 @@ module.exports = function(app) {
 
   var bus = app.bus = {
     send: function (engine, channel, data) {
-      engines[engine].send(channel, data);
+      return engines[engine].send(channel, data);
     },
     listen: function(engine, channel, handler) {
-      engines[engine].listen(channel, handler);
+      return engines[engine].listen(channel, handler);
     },
     queue: function(engine, channel, message) {
       return engines[engine].queue(channel, message);
     },
-    add: function(engine, queue, message) {
-      return engines[engine].add(queue, message);
+    publish: function(engine, queue, message) {
+      return engines[engine].publish(queue, message);
     },
-    process: function(engine, queue, handler) {
-      return engines[engine].process(queue, handler);
+    subscribe: function(engine, queue, handler) {
+      return engines[engine].subscribe(queue, handler);
     }
   }
 

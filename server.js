@@ -26,9 +26,12 @@ require('./modules/bus')(app);
 // Auction module
 require('./modules/auctions')(app);
 
-// Start schedulers
-app.auctionsService.startAuctionsRunner();
-app.auctionsService.startAuctionsCloser();
+// Only start this on the first server if we are using PM2
+if (!process.env.pm_id || process.env.pm_id=='0') {
+  // Tests
+  require('./test')(app);
 
-// Tests
-require('./test')(app);
+  // Start schedulers
+  app.auctionsService.startAuctionsRunner();
+  app.auctionsService.startAuctionsCloser();
+}
