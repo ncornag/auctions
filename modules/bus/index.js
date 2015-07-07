@@ -15,6 +15,15 @@ module.exports = function(app) {
     },
     listen: function(engine, channel, handler) {
       engines[engine].listen(channel, handler);
+    },
+    queue: function(engine, channel, message) {
+      return engines[engine].queue(channel, message);
+    },
+    add: function(engine, queue, message) {
+      return engines[engine].add(queue, message);
+    },
+    process: function(engine, queue, handler) {
+      return engines[engine].process(queue, handler);
     }
   }
 

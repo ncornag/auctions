@@ -28,7 +28,7 @@
     }
   },
   "scheduler": {
-    "startAuctionsRunnerFrequencyInSeconds": 1,
+    "startAuctionsRunnerFrequencyInSeconds": 5,
     "stopAuctionsRunnerFrequencyInSeconds": 1
   },
   "stats": {

@@ -7,27 +7,27 @@ module.exports = function(app) {
   app.store.wipeAllYesImSure();
 
   var products = [
-    {pid: 100, img:'http://lorempixel.com/350/350/'},
-    {pid: 101, img:'http://lorempixel.com/350/350/'},
-    {pid: 102, img:'http://lorempixel.com/350/350/'},
-    {pid: 103, img:'http://lorempixel.com/350/350/'},
-    {pid: 104, img:'http://lorempixel.com/350/350/'},
-    {pid: 105, img:'http://lorempixel.com/350/350/'},
-    {pid: 106, img:'http://lorempixel.com/350/350/'},
-    {pid: 107, img:'http://lorempixel.com/350/350/'},
-    {pid: 108, img:'http://lorempixel.com/350/350/'},
-    {pid: 109, img:'http://lorempixel.com/350/350/'},
-    {pid: 110, img:'http://lorempixel.com/350/350/'},
-    {pid: 111, img:'http://lorempixel.com/350/350/'},
-    {pid: 112, img:'http://lorempixel.com/350/350/'},
-    {pid: 113, img:'http://lorempixel.com/350/350/'},
-    {pid: 114, img:'http://lorempixel.com/350/350/'},
-    {pid: 115, img:'http://lorempixel.com/350/350/'},
-    {pid: 116, img:'http://lorempixel.com/350/350/'},
-    {pid: 117, img:'http://lorempixel.com/350/350/'},
-    {pid: 118, img:'http://lorempixel.com/350/350/'},
-    {pid: 119, img:'http://lorempixel.com/350/350/'},
-    {pid: 120, img:'http://lorempixel.com/350/350/'}
+    {pid: 100, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 101, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 102, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 103, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 104, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 105, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 106, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 107, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 108, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 109, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 110, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 111, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 112, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 113, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 114, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 115, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 116, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 117, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 118, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 119, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()},
+    {pid: 120, img:'http://lorempixel.com/350/350/?rnd=' + Math.random()}
   ];
 
   // Create long auctions

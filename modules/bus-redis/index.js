@@ -2,6 +2,7 @@
 
 var url = require('url');
 var Redis = require('ioredis');
+var Queue = require('bull');
 
 module.exports = function(app, name) {
   var configUrl = app.config.get('bus:' + name + ':url');
@@ -24,6 +25,15 @@ module.exports = function(app, name) {
           handler.call(this, channel, JSON.parse(message));
         });
       });
+    },
+    queue: function(channel, message) {
+      return Queue(channel, parsedUrl.port, parsedUrl.hostname);
+    },
+    add: function(queue, message) {
+      return queue.add(message);
+    },
+    process: function(queue, handler) {
+      return queue.process(handler)
     }
   };
 }

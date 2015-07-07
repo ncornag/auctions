@@ -25,6 +25,7 @@ module.exports = function(app) {
   var stopAuctionsRunnerFrequency = app.config.get('scheduler:stopAuctionsRunnerFrequencyInSeconds') * 1000;
   var client = new Redis(app.config.get('store:url'));
   var busImpl = app.config.get('bus:default');
+  var bidsQueue = app.bus.queue('srv', 'bids');
 
   var userChannel = function(userName) {
     return 'user:' + userName;
@@ -68,6 +69,7 @@ module.exports = function(app) {
     })
   };
   module.startAuctionsRunner = function() {
+    startAuctions((new Date()).getTime());
     startAuctionsTimer = setInterval(function(){
       startAuctions((new Date()).getTime());
     }, startAuctionsRunnerFrequency);
@@ -101,6 +103,7 @@ module.exports = function(app) {
     })
   };
   module.startAuctionsCloser = function() {
+    stopAuctions((new Date()).getTime());
     stopAuctionsTimer = setInterval(function(){
       stopAuctions((new Date()).getTime());
     }, stopAuctionsRunnerFrequency);
@@ -156,18 +159,24 @@ module.exports = function(app) {
     });
   }
 
-  // Do bids from the bids queue
-  //app.bus.listen('bids', function bidsMessageHandler(message) {
-  app.bus.listen('srv', 'bids', function bidsMessageHandler(channel, message) {
-    if(channel=='bids') {
-      app.auctionsService.bid(message.id, {
-        bid: message.bid,
-        owner: message.owner,
-        auto: message.auto
-      }).catch(function (err) {
-        //app.logger.error('%s', err.toString())
-      });
-    }
+  /* Queue the bid request */
+  module.enqueueBid = function(bidReq) {
+    return app.bus.add('srv', bidsQueue, bidReq);
+  }
+
+  /* Process the bid request */
+  app.bus.process('srv', bidsQueue, function(message, done){
+    app.auctionsService.bid(message.data.id, {
+      bid: message.data.bid,
+      owner: message.data.owner,
+      auto: message.data.auto
+    }).then(function(){
+      done();
+    }).catch(function (err) {
+      //logger.error('%s', err.toString())
+      done(err);
+    });
+
   });
 
   // Do bids
